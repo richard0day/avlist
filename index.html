@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>安软进程速查</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-5">
+    <div class="max-w-3xl mx-auto">
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h2 class="text-xl font-bold mb-4 text-gray-700">🔍 进程清单快速识别</h2>
+            <textarea id="input" class="w-full h-64 p-3 border rounded-lg font-mono text-sm bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400" placeholder="粘贴 tasklist 或 ps -aux 内容..."></textarea>
+            <button onclick="check()" class="mt-4 w-full bg-blue-600 text-white py-2 rounded-lg font-bold hover:bg-blue-700">识别安软</button>
+        </div>
+
+        <div id="results" class="mt-6 grid gap-3"></div>
+    </div>
+
+    <script>
+        let db = {};
+
+        // 异步加载离线库
+        fetch('./data.json')
+            .then(res => res.json())
+            .then(data => db = data);
+
+        function check() {
+            const text = document.getElementById('input').value;
+            const resDiv = document.getElementById('results');
+            resDiv.innerHTML = '';
+            
+            // 提取所有可能的“单词”（进程名通常不含空格）
+            // 这个正则可以提取 Windows 的 .exe 或 Linux 的进程名
+            const words = text.match(/[a-zA-Z0-9\._-]+\b/g) || [];
+            const found = new Set();
+
+            words.forEach(word => {
+                // 遍历数据库进行匹配
+                for (let proc in db) {
+                    if (word.toLowerCase() === proc.toLowerCase()) {
+                        found.add(proc);
+                    }
+                }
+            });
+
+            if (found.size === 0) {
+                resDiv.innerHTML = '<div class="text-center text-gray-400 mt-4">未发现匹配的安软进程</div>';
+                return;
+            }
+
+            found.forEach(proc => {
+                resDiv.innerHTML += `
+                    <div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-green-500 flex justify-between">
+                        <span class="font-bold text-gray-800">${db[proc]}</span>
+                        <code class="text-gray-400 text-sm">${proc}</code>
+                    </div>`;
+            });
+        }
+    </script>
+</body>
+</html>
